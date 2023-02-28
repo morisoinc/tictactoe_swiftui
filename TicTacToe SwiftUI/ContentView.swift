@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
 
     @State private var moves: [Move?] = Array(repeating: nil, count: 9)
-    @State private var isHumansTurn = true
+    @State private var isGameBoardDisabled = false
     
     let columns: [GridItem] = [
         GridItem(.flexible()),
@@ -38,17 +38,36 @@ struct ContentView: View {
                                 .foregroundColor(.white)
                         }
                         .onTapGesture {
-                            if isSquareOccupied(in: moves, forIndex: i) || !isHumansTurn { return }
+                            if isSquareOccupied(in: moves, forIndex: i) { return }
                             moves[i] = Move(player: .human, boardIndex: i)
+                            isGameBoardDisabled = true
                             
-                            isHumansTurn.toggle()
+                            if checkWinCondition(for: .human, in: moves) {
+                                print("Human wins")
+                                return
+                            }
                             
-                            if isBoardFilled(in: moves) { return }
+                            if checkForDraw(in: moves) {
+                                print("Draw")
+                                return
+                            }
+                            
+                            
                             
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 let computerPosition = determineComputerMovePosition(in: moves)
                                 moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
-                                isHumansTurn.toggle()
+                                isGameBoardDisabled = false
+                                
+                                if checkWinCondition(for: .computer, in: moves) {
+                                    print("Computer wins")
+                                    return
+                                }
+                                
+                                if checkForDraw(in: moves) {
+                                    print("Draw")
+                                    return
+                                }
                             }
                         }
                     }
@@ -56,6 +75,7 @@ struct ContentView: View {
                 .padding(.all, 16)
                 Spacer()
             }
+            .disabled(isGameBoardDisabled)
         }
     }
     
@@ -63,8 +83,19 @@ struct ContentView: View {
         return moves.contains(where: {$0?.boardIndex == index})
     }
     
-    func isBoardFilled(in moves: [Move?]) -> Bool {
-        return moves.allSatisfy({$0 != nil})
+    func checkWinCondition(for player: Player, in moves: [Move?]) -> Bool {
+        let winPatterns: Set<Set<Int>> = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+        
+        let playerMoves = moves.compactMap { $0 }.filter { $0.player == player }
+        let playerPositions = Set(playerMoves.map { $0.boardIndex })
+        
+        for pattern in winPatterns where pattern.isSubset(of: playerPositions) { return true }
+        
+        return false
+    }
+    
+    func checkForDraw(in moves: [Move?]) -> Bool {
+        return moves.compactMap { $0 }.count == 9
     }
     
     
