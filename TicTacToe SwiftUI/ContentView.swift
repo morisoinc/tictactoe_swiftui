@@ -14,53 +14,51 @@ struct ContentView: View {
     @State private var alertItem: AlertItem?
     
     let columns: [GridItem] = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible()),
+        GridItem(.flexible(), spacing: 0),
+        GridItem(.flexible(), spacing: 0),
+        GridItem(.flexible(), spacing: 0),
     ]
     
     var body: some View {
         GeometryReader { geometry in
             VStack {
                 Spacer()
-                LazyVGrid(columns: columns) {
-                    ForEach(0..<9) { i in
-                        ZStack {
-                            Circle()
-                                .foregroundColor(.purple).opacity(
-                                    moves[i] == nil ? 0.3 : 0.7
-                                )
-                                .frame(
-                                    width: geometry.size.width / 3 - 16
-                                )
-                            Image(systemName: moves[i]?.indicator ?? "")
-                                .resizable()
-                                .frame(width: 40, height: 40)
-                                .foregroundColor(.white)
-                        }
-                        .onTapGesture {
-                            if isSquareOccupied(in: moves, forIndex: i) { return }
-                            moves[i] = Move(player: .human, boardIndex: i)
-                            
-                            if checkWinCondition(for: .human, in: moves) {
-                                alertItem = AlertContext.humanWin
-                                return
+                LazyVGrid(columns: columns, spacing: 0) {
+                        ForEach(0..<9) { i in
+                            ZStack {
+                                Rectangle()
+                                    .foregroundColor(.black)
+                                    .frame(
+                                        width: geometry.size.width / 3,
+                                        height: geometry.size.width / 3
+                                    )
+                                ZStack {
+                                    Rectangle()
+                                        .foregroundColor(.white)
+                                        .frame(
+                                            width: geometry.size.width / 3 - 8,
+                                            height: geometry.size.width / 3 - 8
+                                        )
+                                    Circle()
+                                        .foregroundColor(.purple).opacity(
+                                            moves[i] == nil ? 0.3 : 0.7
+                                        )
+                                        .frame(
+                                            width: geometry.size.width / 3 - 24,
+                                            height: geometry.size.width / 3 - 24
+                                        )
+                                    Image(systemName: moves[i]?.indicator ?? "")
+                                        .resizable()
+                                        .frame(width: 40, height: 40)
+                                        .foregroundColor(.white)
+                                }
                             }
-                            
-                            if checkForDraw(in: moves) {
-                                alertItem = AlertContext.draw
-                                return
-                            }
-                            
-                            isGameBoardDisabled = true
-                            
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                let computerPosition = determineComputerMovePosition(in: moves)
-                                moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
-                                isGameBoardDisabled = false
+                            .onTapGesture {
+                                if isSquareOccupied(in: moves, forIndex: i) { return }
+                                moves[i] = Move(player: .human, boardIndex: i)
                                 
-                                if checkWinCondition(for: .computer, in: moves) {
-                                    alertItem = AlertContext.computerWin
+                                if checkWinCondition(for: .human, in: moves) {
+                                    alertItem = AlertContext.humanWin
                                     return
                                 }
                                 
@@ -68,10 +66,28 @@ struct ContentView: View {
                                     alertItem = AlertContext.draw
                                     return
                                 }
+                                
+                                isGameBoardDisabled = true
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                    let computerPosition = determineComputerMovePosition(in: moves)
+                                    moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                                    isGameBoardDisabled = false
+                                    
+                                    if checkWinCondition(for: .computer, in: moves) {
+                                        alertItem = AlertContext.computerWin
+                                        return
+                                    }
+                                    
+                                    if checkForDraw(in: moves) {
+                                        alertItem = AlertContext.draw
+                                        return
+                                    }
+                                }
                             }
                         }
                     }
-                }
+
                 .padding(.all, 16)
                 Spacer()
             }
